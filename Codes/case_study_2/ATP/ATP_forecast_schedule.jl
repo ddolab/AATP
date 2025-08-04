@@ -15,17 +15,18 @@ F_accepted_quantities = []
 
 if(schedule_iter>1)
     for s in S
-    F_INV_initial[s] = round.(value.(Inv[s,schedule_start_time]),digits=3)
+    # F_INV_initial[s] = trunc.(value.(Inv[s,schedule_start_time]),digits=1)
+    F_INV_initial[s] = value.(Inv[s,schedule_start_time])
     end
 end
 
 for idx in eachindex(FQ_ID)
     if (!(FQ_ID[idx] in F_OiD) && (FQ[idx] > 0.0) && FQ_DE[idx] > schedule_start_time && FQ_DE[idx] <= schedule_end_time)
-        # #println("Entering forecasted order ",FQ_ID[idx], " qty ", FQ[idx])
+        # println("Entering forecasted order ",FQ_ID[idx], " qty ", FQ[idx], " date ", FQ_DE[idx])
         push!(F_OiD,FQ_ID[idx])
         push!(F_O,FQ_P[idx])
-        push!(F_ce,FQ[idx])
-        push!(F_cl,FQ[idx])
+        push!(F_ce,trunc(FQ[idx],digits=1))
+        push!(F_cl,trunc(FQ[idx],digits=1))
         push!(F_de,FQ_DE[idx])
         push!(F_dl,FQ_DL[idx])
         push!(F_ae,start_time)
@@ -39,9 +40,17 @@ end
 global T = schedule_start_time:schedule_end_time
 
 
-include("Scheduling_model.jl")
-include("ATP_cost_data_forecast.jl") # use this to print the data for all runs
-include("ATP_extract_data_forecast.jl")  # use this to print the data of current execution
+include("ATP_forecast_ss.jl")
+# include("ATP_cost_data_forecast.jl")
+# include("ATP_extract_data_forecast.jl")
+
+
+
+
+# println("Start_time:  ", start_time)
+# for s in S
+#     INV_initial[s] = round.(value.(Inv[s,start_time]),digits=8) + sum(value(C[k, F_de[k]]) for k in K if F_OiD[k] > 1000 && F_O[k] == s && F_de[k] <= start_time; init=0.0)
+# end
 
 
 indicies = 1:length(F_OiD)

@@ -214,109 +214,11 @@ for itr = 1:last_itr
         global indicies = findall(arrival_time -> (arrival_time > Batching_Interval*(iter-2)+1 &&  arrival_time <= Batching_Interval*(iter-1)+1),Arrival_Time)
     end
 
-    #=
-    ##################### Add actual demand orders to the order list #####################
-
   
-    println("Forecast neeting uniform")
-    total_demand = 0
-    for idx in indicies
-        # if(!(order_Id[idx] in OiD))
-        total_demand += Max_Order_Quantity[idx]
-        println("Demand ", total_demand, " order ", idx, " ",  order_Id[idx], " quantity ",Max_Order_Quantity[idx])
-        # end
-    end
-
-    total_forecast_demand = 0
-
-    for idx in eachindex(OiD)
-        if(OiD[idx] > 1100)
-            total_forecast_demand += ce[idx]
-            println("Forecast ", total_forecast_demand, " order ", OiD[idx], " quantity  ", ce[idx])
-        end
-    end
-
-    println(total_demand, " ", total_forecast_demand)
-    
-    forecast_demand = 0
-    if (total_demand < total_forecast_demand)
-        forecast_demand = round((total_forecast_demand - total_demand)/14,digits=0)
-    end
-    
-    println("forecast demand ", forecast_demand )
-
-    for idx in eachindex(OiD)
-        if(OiD[idx] > 1100)
-            ce[idx] = forecast_demand
-            cl[idx] = forecast_demand
-
-            for id in eachindex(FQ_ID)
-                if(OiD[idx]==FQ_ID[id])
-                    FQ[id] = forecast_demand
-                end     
-            end
-        end
-    end
-    =#
-    ##################### Forecast Netting #####################
     for idx in indicies
 
         if(Response_Time[idx] >= start_time && Latest_Due_Time[idx] >= start_time) # Add only those orders whose response time is not passed
 
-            # println("Order Id: ",order_Id[idx], " min: ",  Min_Order_Quantity[idx], "Max: ",  Max_Order_Quantity[idx])
-            # ## find all the overlapping forecast demand delivery time with the actual order
-            # # netted_indicies = findall(forecast_due_time  -> (forecast_due_time >= Earliest_Due_Time[idx] && forecast_due_time <= Latest_Due_Time[idx]),FQ_DE)
-            # netted_indicies = sort(findall(forecast_due_time  -> (forecast_due_time <= Latest_Due_Time[idx]),FQ_DE),rev=true)
-            # println("Netting Ids ", FQ_ID[netted_indicies])
-            # global netted_qty = Max_Order_Quantity[idx]
-            # for net_idx in netted_indicies
-            #     if (FQ_ID[net_idx] in OiD && FQ_P[net_idx] == Product_Type[idx] && FQ[net_idx] > 0)
-            #         global index = findfirst(id -> id == FQ_ID[net_idx], OiD)
-            #         println("index in the order list ",index, " forecast: ", ce[index]," Actual: ",Min_Order_Quantity[idx], " Netted: ", netted_qty)
-
-            #         if (FQ[net_idx] >= netted_qty)
-            #             println("before ", ce)
-            #             ce[index] -=  netted_qty
-            #             FQ[net_idx] -= netted_qty
-            #             global netted_qty -= netted_qty
-            #             println("reduing forecast demand")
-            #             println("after ",ce)
-            #             FQ[net_idx] = round(FQ[net_idx],digits=3)
-            #             ce[index] = round(ce[index],digits=3)
-            #             println(FQ[net_idx], " ",ce[index])
-            #             break
-            #         else
-            #             println("before ", ce)
-            #             global netted_qty -= FQ[net_idx]
-            #             ce[index] -= ce[index]
-            #             FQ[net_idx] -= FQ[net_idx] 
-            #             FQ[net_idx] = round(FQ[net_idx],digits=3)
-            #             ce[index] = round(ce[index],digits=3)
-            #             println(FQ[net_idx], " ",ce[index])
-            #             FQ_order_decision[net_idx] = 2
-            #             println("removing forecast demand")
-            #             println("after ",ce)
-            #         end
-            #     end
-            #     if (netted_qty == 0.0)
-            #         break
-            #     end
-            # end
-
-            # net_idx = findall(qty->qty<=1e-3,ce) 
-            # deleteat!(OiD,net_idx)
-            # deleteat!(O,net_idx)
-            # deleteat!(ae,net_idx)
-            # deleteat!(al,net_idx)
-            # deleteat!(prt,net_idx)
-            # deleteat!(ce,net_idx)
-            # deleteat!(cl,net_idx)
-            # deleteat!(de,net_idx)
-            # deleteat!(dl,net_idx)
-            # deleteat!(due_time,net_idx) 
-            # deleteat!(decision,net_idx)
-            # deleteat!(accepted_quantities,net_idx) 
-            # #println(ce)
             ######################## add the order to the order list #####################################
             push!(OiD,order_Id[idx])
             push!(O,Product_Type[idx])
@@ -335,14 +237,6 @@ for itr = 1:last_itr
         end
     end
 
-   
-    # println("Orders: ", OiD)
-    # println("Quanti: ",ce)
-    # println("early : ",de)
-    # println("latnes: ",dl)
-
-    
-
     for k in eachindex(de)
         if de[k] < start_time
             de[k] = start_time
@@ -359,10 +253,9 @@ for itr = 1:last_itr
 
     ##################### Initiate ATP run #####################
     if(length(OiD)>0)
-        include("ATP_SS_online.jl")
+        include("ATP_optimization.jl")
         include("ATP_cost_data.jl")
         include("ATP_extract_data.jl")
-        # include("ATP_plots.jl")
     end
     ##################### Model Decesions on Order acceptance and due times #####################
     for k in eachindex(OiD)
@@ -405,24 +298,6 @@ for itr = 1:last_itr
                 end
            end
     end
-
-    # Fix the decision for orders which are accepted
-    # global indicies = findall(k -> value.(Z[k]) == 1, 1:length(al))
-    # # #println(indicies)
-    # if (length(indicies)>0)
-    #     for k in indicies
-    #         if Response_Time[k] < start_time
-    #             decision[k] = 1
-    #             # Fix the due time for order which have due time in the fixed horizon
-    #             if(sum(value(D[k,t])*t for t in de[k]:dl[k]) <= Fixed_Horizon)
-    #                 due_time[k] = Int(ceil(sum(value(D[k,t])*t for t in de[k]:dl[k])))
-    #             end
-    #         end
-    #     end
-    # end
-
-    
-
 
     # Remove orders which have the assign due time before the new start time 
     global indicies = findall(k -> sum(value(D[k,t])*t for t in de[k]:dl[k]) <= start_time &&  value.(Z[k]) == 1, 1:length(al))
