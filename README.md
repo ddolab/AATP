@@ -6,8 +6,7 @@ This repository is associated with the paper found at this link:
 https://doi.org/10.1021/acs.iecr.5c03257
 
 ## Cite
-If you use this material in your work, please cite it as follows.  
-**Below is the BibTeX entry for citing this article:**
+If you use this material in your work, please cite it as follows:
 ```bibtex
 @article{doi:10.1021/acs.iecr.5c03257,
 author = {Sahu, Vishnu Kumar and Zhang, Qi},
